@@ -4,7 +4,7 @@ import { useRouter } from "expo-router";
 import { salvarUsuario } from "../servico/usuarioService";
 import InputField from "../Componentes/InputField";
 import BotaoPrimario from "../Componentes/BotaoPrimario";
-import ImagemAdaptativa from "../Componentes/ImagemAdaptativa";
+import ImagemAdaptativa from "../Componentes/imagemAdaptativa";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 

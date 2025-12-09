@@ -50,10 +50,10 @@ export default function Pagina1() {
   },
   divModalRefeicoes:{
         flexDirection:'column',
-        columnGap:30,
-        position:'absolute',
+        rowGap:20,
         marginTop:"40%",
         alignSelf:'center',
+        paddingHorizontal:20,
   }
   
     });

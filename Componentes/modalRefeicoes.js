@@ -27,10 +27,10 @@ export default function ModalRefeicoes(texto) {
     padding:15,
     justifyContent:'flex-start',
     backgroundColor: "#D9D9D9",
-    position:"absolute",
     borderColor:'#ffffff',
     borderWidth:2,
-    borderRadius:20
+    borderRadius:20,
+    marginBottom:10
 
   },
         nomeRefeicao:{

@@ -4,7 +4,7 @@ import { useRouter, useFocusEffect } from "expo-router";
 import { buscarUsuario, atualizarUsuario, fazerLogout } from "../servico/usuarioService";
 import InputField from "../Componentes/InputField";
 import BotaoPrimario from "../Componentes/BotaoPrimario";
-import ImagemAdaptativa from "../Componentes/ImagemAdaptativa";
+import ImagemAdaptativa from "../Componentes/imagemAdaptativamagemAdaptativa";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 

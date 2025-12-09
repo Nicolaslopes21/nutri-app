@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, Dimensions, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
-import ImagemAdaptativa from "../Componentes/ImagemAdaptativa";
+import ImagemAdaptativa from "../Componentes/imagemAdaptativa";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
