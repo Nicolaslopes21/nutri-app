@@ -1,23 +1,104 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Dimensions,
-  TextInput,
-  TouchableOpacity,
-  Image,
-} from "react-native";
+import React, { useState, useEffect } from "react";
+import {View, Text, StyleSheet, Dimensions, Alert, ScrollView, TouchableOpacity} from "react-native";
+import { useRouter, useFocusEffect } from "expo-router";
+import { buscarUsuario, atualizarUsuario, fazerLogout } from "../servico/usuarioService";
+import InputField from "../Componentes/InputField";
+import BotaoPrimario from "../Componentes/BotaoPrimario";
+import ImagemAdaptativa from "../Componentes/ImagemAdaptativa";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
-export default function Perfil() {
+export default function Configuracao() {
   const [size, setSize] = useState({ w: 0, h: 0 });
+  const [usuario, setUsuario] = useState(null);
+  const [edicao, setEdicao] = useState(false);
+  const [carregando, setCarregando] = useState(false);
+  const [dadosEditando, setDadosEditando] = useState({});
+  const router = useRouter();
 
   const offsetY = -screenHeight * 0.35;
 
+  // Carrega dados do usuário ao abrir a página
+  useFocusEffect(
+    React.useCallback(() => {
+      carregarUsuario();
+    }, [])
+  );
+
+  const carregarUsuario = async () => {
+    try {
+      const dados = await buscarUsuario();
+      if (dados) {
+        setUsuario(dados);
+        setDadosEditando(dados);
+      } else {
+        Alert.alert("Erro", "Nenhum usuário encontrado");
+        router.replace("/index");
+      }
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Erro", "Erro ao carregar dados");
+    }
+  };
+
+  const handleSalvar = async () => {
+    if (!dadosEditando.nome.trim() || !dadosEditando.idade.trim() || !dadosEditando.peso.trim()) {
+      Alert.alert("Erro", "Preencha todos os campos");
+      return;
+    }
+
+    setCarregando(true);
+    try {
+      const usuarioAtualizado = {
+        ...usuario,
+        nome: dadosEditando.nome.trim(),
+        idade: dadosEditando.idade.trim(),
+        peso: dadosEditando.peso.trim(),
+      };
+
+      const salvo = await atualizarUsuario(usuarioAtualizado);
+      if (salvo) {
+        setUsuario(usuarioAtualizado);
+        setEdicao(false);
+        Alert.alert("Sucesso", "Dados atualizados com sucesso!");
+      } else {
+        Alert.alert("Erro", "Erro ao salvar dados");
+      }
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Erro", "Algo deu errado");
+    } finally {
+      setCarregando(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    Alert.alert("Logout", "Deseja realmente sair?", [
+      {
+        text: "Cancelar",
+        onPress: () => {},
+        style: "cancel",
+      },
+      {
+        text: "Sair",
+        onPress: async () => {
+          await fazerLogout();
+          router.replace("/login");
+        },
+      },
+    ]);
+  };
+
+  if (!usuario) {
+    return (
+      <View style={styles.geral}>
+        <Text>Carregando...</Text>
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.geral}>
+    <ScrollView style={styles.geral}>
 
       {/* Fundo verde curvo igual ao modelo */}
       <View
@@ -45,66 +126,117 @@ export default function Perfil() {
 
       {/* TOPO COM NOME + AVATAR */}
       <View style={styles.header}>
-        <Image
-          source={require("../assets/usuarioimagem.png")} // coloque sua imagem
+        <ImagemAdaptativa
+          source={require("../assets/usuarioimagem.png")}
           style={styles.headerAvatar}
         />
-        <Text style={styles.headerName}>Leonardo</Text>
+        <Text style={styles.headerName}>{usuario.nome}</Text>
 
-        <Image
-          source={require("../assets/logoNutri2.png")} // ícone do lado direito
-          style={styles.headerIcon}
-        />
+        <TouchableOpacity onPress={handleLogout}>
+          <Text style={styles.headerIcon}>🚪</Text>
+        </TouchableOpacity>
       </View>
 
       {/* CARD BRANCO DA EDIÇÃO */}
       <View style={styles.card}>
-
-        {/* Botão de fechar */}
-        <TouchableOpacity style={styles.closeButton}>
-          <Text style={styles.closeText}>✕</Text>
+        {/* Botão de fechar/editar */}
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={() => (edicao ? setEdicao(false) : setEdicao(true))}
+        >
+          <Text style={styles.closeText}>{edicao ? "✕" : "✎"}</Text>
         </TouchableOpacity>
 
         {/* Avatar central */}
-        <Image
-          source={require("../assets/usuarioimagem.png")} // avatar
+        <ImagemAdaptativa
+          source={require("../assets/usuarioimagem.png")}
           style={styles.cardAvatar}
         />
 
         <Text style={styles.title}>
-          <Text style={{ fontWeight: "bold" }}>EDITAR Perfil </Text>✎
+          {edicao ? "EDITANDO Perfil" : "MEUS DADOS"} {edicao && "✎"}
         </Text>
 
         {/* Inputs */}
-        <View style={styles.inputBox}>
-          <Text style={styles.inputLabel}>Nome:</Text>
-          <Text style={styles.inputValue}>Leonardo</Text>
-        </View>
+        {edicao ? (
+          <>
+            <InputField
+              label="Nome"
+              placeholder="Seu nome"
+              value={dadosEditando.nome || ""}
+              onChangeText={(text) =>
+                setDadosEditando({ ...dadosEditando, nome: text })
+              }
+            />
+            <InputField
+              label="Idade"
+              placeholder="Sua idade"
+              value={dadosEditando.idade || ""}
+              onChangeText={(text) =>
+                setDadosEditando({ ...dadosEditando, idade: text })
+              }
+              keyboardType="numeric"
+            />
+            <InputField
+              label="Peso (kg)"
+              placeholder="Seu peso"
+              value={dadosEditando.peso || ""}
+              onChangeText={(text) =>
+                setDadosEditando({ ...dadosEditando, peso: text })
+              }
+              keyboardType="decimal-pad"
+            />
 
-        <View style={styles.inputBox}>
-          <Text style={styles.inputLabel}>Idade:</Text>
-          <Text style={styles.inputValue}>19 anos</Text>
-        </View>
+            {/* Botões de ação em edição */}
+            <View style={styles.buttonsRow}>
+              <BotaoPrimario
+                titulo={carregando ? "Salvando..." : "Salvar"}
+                onPress={handleSalvar}
+                disabled={carregando}
+                largura="45%"
+              />
+              <BotaoPrimario
+                titulo="Cancelar"
+                onPress={() => {
+                  setEdicao(false);
+                  setDadosEditando(usuario);
+                }}
+                cor="#999"
+                largura="45%"
+              />
+            </View>
+          </>
+        ) : (
+          <>
+            <View style={styles.inputBox}>
+              <Text style={styles.inputLabel}>Nome:</Text>
+              <Text style={styles.inputValue}>{usuario.nome}</Text>
+            </View>
 
-        <View style={styles.inputBox}>
-          <Text style={styles.inputLabel}>Peso:</Text>
-          <Text style={styles.inputValue}>70</Text>
-        </View>
+            <View style={styles.inputBox}>
+              <Text style={styles.inputLabel}>Idade:</Text>
+              <Text style={styles.inputValue}>{usuario.idade} anos</Text>
+            </View>
 
-        {/* Botão Salvar */}
-        <TouchableOpacity style={styles.btn}>
-          <Text style={styles.btnText}>Salvar</Text>
-        </TouchableOpacity>
+            <View style={styles.inputBox}>
+              <Text style={styles.inputLabel}>Peso:</Text>
+              <Text style={styles.inputValue}>{usuario.peso} kg</Text>
+            </View>
 
+            <View style={styles.inputBox}>
+              <Text style={styles.inputLabel}>Email:</Text>
+              <Text style={styles.inputValue}>{usuario.email}</Text>
+            </View>
+          </>
+        )}
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   geral: {
     flex: 1,
-    alignItems: "center",
     backgroundColor: "#EEEEEE",
   },
 
@@ -133,8 +265,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   headerIcon: {
-    width: 45,
-    height: 45,
+    fontSize: 28,
   },
 
   /* ------ CARD BRANCO ------ */
@@ -142,10 +273,13 @@ const styles = StyleSheet.create({
     width: "85%",
     backgroundColor: "#fff",
     marginTop: 40,
+    marginLeft: "auto",
+    marginRight: "auto",
     paddingVertical: 30,
     borderRadius: 25,
     alignItems: "center",
     elevation: 5,
+    marginBottom: 30,
   },
   closeButton: {
     position: "absolute",
@@ -166,9 +300,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     marginBottom: 20,
+    fontWeight: "bold",
   },
 
-  /* caixas brancas com texto - Nome/Idade/Peso */
+  /* caixas com texto - Nome/Idade/Peso */
   inputBox: {
     width: "75%",
     backgroundColor: "#F3F3F3",
@@ -183,21 +318,14 @@ const styles = StyleSheet.create({
   inputValue: {
     fontSize: 16,
     marginTop: 3,
+    color: "#333",
   },
 
-  /* Botão salvar */
-  btn: {
-    width: "60%",
-    height: 45,
-    borderRadius: 30,
-    backgroundColor: "#008000",
-    justifyContent: "center",
-    alignItems: "center",
+  /* Botões lado a lado */
+  buttonsRow: {
+    width: "80%",
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginTop: 10,
-  },
-  btnText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 18,
   },
 });
